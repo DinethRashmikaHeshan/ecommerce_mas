@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShopBot MAS — Multi-Agent Dashboard</title>
+    <meta name="description" content="E-Commerce Multi-Agent System Dashboard – Visualize AI agent collaboration in real-time">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================ */
+        /*  DESIGN TOKENS                               */
+        /* ============================================ */
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #16161f;
+            --bg-card-hover: #1c1c28;
+            --bg-input: #1a1a25;
+            --border-subtle: rgba(255,255,255,0.06);
+            --border-active: rgba(139,92,246,0.4);
+            --text-primary: #f0f0f5;
+            --text-secondary: #8b8b9e;
+            --text-muted: #5a5a6e;
+            --accent-violet: #8b5cf6;
+            --accent-violet-glow: rgba(139,92,246,0.25);
+            --accent-cyan: #06b6d4;
+            --accent-cyan-glow: rgba(6,182,212,0.2);
+            --accent-emerald: #10b981;
+            --accent-emerald-glow: rgba(16,185,129,0.2);
+            --accent-amber: #f59e0b;
+            --accent-amber-glow: rgba(245,158,11,0.2);
+            --accent-rose: #f43f5e;
+            --accent-rose-glow: rgba(244,63,94,0.2);
+            --accent-blue: #3b82f6;
+            --accent-blue-glow: rgba(59,130,246,0.2);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-lg: 16px;
+            --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
+            --shadow-glow: 0 0 40px rgba(139,92,246,0.15);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-body: 'Inter', -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        /* ============================================ */
+        /*  RESET & BASE                                */
+        /* ============================================ */
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(139,92,246,0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(6,182,212,0.04) 0%, transparent 50%),
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 100%, 100%, 60px 60px, 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ============================================ */
+        /*  LAYOUT                                      */
+        /* ============================================ */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* ============================================ */
+        /*  HEADER                                      */
+        /* ============================================ */
+        header {
+            padding: 32px 0 24px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--accent-violet), var(--accent-cyan));
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 0 20px var(--accent-violet-glow);
+        }
+
+        .logo h1 {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent-violet));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo span {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 400;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            -webkit-text-fill-color: var(--text-muted);
+        }
+
+        .header-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            background: var(--bg-card);
+            padding: 8px 16px;
+            border-radius: 100px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-emerald);
+            box-shadow: 0 0 8px var(--accent-emerald-glow);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* ============================================ */
+        /*  PIPELINE VISUALIZATION                      */
+        /* ============================================ */
+        .pipeline-section {
+            padding: 40px 0 32px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .pipeline {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .agent-card {
+            flex: 1;
+            min-width: 200px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius);
+            padding: 24px 20px;
+            position: relative;
+            transition: var(--transition);
+            cursor: default;
+        }
+
+        .agent-card:hover {
+            background: var(--bg-card-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-card);
+        }
+
+        .agent-card.active {
+            border-color: var(--accent-violet);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .agent-card.complete {
+            border-color: var(--accent-emerald);
+            box-shadow: 0 0 30px var(--accent-emerald-glow);
+        }
+
+        .agent-card.error {
+            border-color: var(--accent-rose);
+            box-shadow: 0 0 30px var(--accent-rose-glow);
+        }
+
+        .pipeline-arrow {
+            display: flex;
+            align-items: center;
+            padding: 0 6px;
+            color: var(--text-muted);
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .pipeline-arrow.active {
+            color: var(--accent-violet);
+            animation: arrowPulse 1.5s infinite;
+        }
+
+        @keyframes arrowPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .agent-number {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 14px;
+            transition: var(--transition);
+        }
+
+        .agent-card:nth-child(1) .agent-number { background: var(--accent-violet-glow); color: var(--accent-violet); border: 1px solid rgba(139,92,246,0.3); }
+        .agent-card:nth-child(3) .agent-number { background: var(--accent-cyan-glow); color: var(--accent-cyan); border: 1px solid rgba(6,182,212,0.3); }
+        .agent-card:nth-child(5) .agent-number { background: var(--accent-amber-glow); color: var(--accent-amber); border: 1px solid rgba(245,158,11,0.3); }
+        .agent-card:nth-child(7) .agent-number { background: var(--accent-emerald-glow); color: var(--accent-emerald); border: 1px solid rgba(16,185,129,0.3); }
+
+        .agent-name {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .agent-role {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .agent-tool {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--accent-cyan);
+            background: rgba(6,182,212,0.08);
+            padding: 4px 10px;
+            border-radius: 100px;
+            display: inline-block;
+            border: 1px solid rgba(6,182,212,0.15);
+        }
+
+        .agent-status {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            font-size: 16px;
+        }
+
+        /* Spinner */
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border-subtle);
+            border-top-color: var(--accent-violet);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ============================================ */
+        /*  QUERY INPUT SECTION                         */
+        /* ============================================ */
+        .query-section {
+            padding: 0 0 32px;
+        }
+
+        .query-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .query-form {
+            display: flex;
+            gap: 12px;
+            align-items: stretch;
+        }
+
+        .input-group {
+            flex: 1;
+            position: relative;
+        }
+
+        .query-input {
+            width: 100%;
+            padding: 14px 18px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 15px;
+            transition: var(--transition);
+            outline: none;
+        }
+
+        .query-input:focus {
+            border-color: var(--accent-violet);
+            box-shadow: 0 0 0 3px var(--accent-violet-glow);
+        }
+
+        .query-input::placeholder { color: var(--text-muted); }
+
+        .model-select {
+            padding: 14px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 13px;
+            cursor: pointer;
+            outline: none;
+            transition: var(--transition);
+            -webkit-appearance: none;
+            min-width: 160px;
+        }
+
+        .model-select:focus {
+            border-color: var(--accent-violet);
+            box-shadow: 0 0 0 3px var(--accent-violet-glow);
+        }
+
+        .btn-run {
+            padding: 14px 32px;
+            background: linear-gradient(135deg, var(--accent-violet), #7c3aed);
+            border: none;
+            border-radius: var(--radius);
+            color: white;
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-run:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px var(--accent-violet-glow);
+        }
+
+        .btn-run:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .quick-queries {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+
+        .quick-query {
+            padding: 6px 14px;
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            border-radius: 100px;
+            color: var(--text-secondary);
+            font-family: var(--font-body);
+            font-size: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .quick-query:hover {
+            border-color: var(--accent-violet);
+            color: var(--accent-violet);
+            background: var(--accent-violet-glow);
+        }
+
+        /* ============================================ */
+        /*  DASHBOARD GRID                              */
+        /* ============================================ */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding-bottom: 48px;
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .panel-title {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 100px;
+            background: var(--accent-violet-glow);
+            color: var(--accent-violet);
+        }
+
+        .panel-body {
+            padding: 16px 22px;
+            max-height: 380px;
+            overflow-y: auto;
+        }
+
+        .panel-body::-webkit-scrollbar { width: 4px; }
+        .panel-body::-webkit-scrollbar-track { background: transparent; }
+        .panel-body::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 4px; }
+
+        /* Full width panel */
+        .panel-full { grid-column: 1 / -1; }
+
+        /* ============================================ */
+        /*  INVENTORY TABLE                            */
+        /* ============================================ */
+        .inv-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .inv-table th {
+            text-align: left;
+            padding: 10px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .inv-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            color: var(--text-secondary);
+        }
+
+        .inv-table tr:hover td {
+            color: var(--text-primary);
+            background: rgba(255,255,255,0.02);
+        }
+
+        .sku-badge {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            background: rgba(59,130,246,0.1);
+            color: var(--accent-blue);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .stock-badge {
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 100px;
+            font-size: 12px;
+        }
+
+        .stock-high { background: var(--accent-emerald-glow); color: var(--accent-emerald); }
+        .stock-medium { background: var(--accent-amber-glow); color: var(--accent-amber); }
+        .stock-low { background: var(--accent-rose-glow); color: var(--accent-rose); }
+
+        .price { color: var(--accent-emerald); font-weight: 600; font-family: var(--font-mono); }
+
+        /* ============================================ */
+        /*  ORDERS                                     */
+        /* ============================================ */
+        .order-item {
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .order-item:last-child { border-bottom: none; }
+
+        .order-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .order-id {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent-violet);
+        }
+
+        .order-status {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 100px;
+            background: var(--accent-emerald-glow);
+            color: var(--accent-emerald);
+            text-transform: uppercase;
+        }
+
+        .order-details {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .order-total {
+            font-weight: 700;
+            color: var(--accent-emerald);
+            font-family: var(--font-mono);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 36px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: 13px;
+        }
+
+        /* ============================================ */
+        /*  TRACE LOG                                   */
+        /* ============================================ */
+        .trace-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 0;
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+
+        .trace-event {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            min-width: 90px;
+            text-align: center;
+        }
+
+        .trace-event.agent_start { background: var(--accent-blue-glow); color: var(--accent-blue); }
+        .trace-event.agent_end { background: var(--accent-emerald-glow); color: var(--accent-emerald); }
+        .trace-event.tool_call { background: var(--accent-amber-glow); color: var(--accent-amber); }
+        .trace-event.error { background: var(--accent-rose-glow); color: var(--accent-rose); }
+        .trace-event.state_transition { background: var(--accent-violet-glow); color: var(--accent-violet); }
+
+        .trace-agent {
+            color: var(--text-secondary);
+            font-weight: 500;
+            min-width: 140px;
+        }
+
+        .trace-detail {
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            word-break: break-all;
+            flex: 1;
+        }
+
+        .trace-time {
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            white-space: nowrap;
+        }
+
+        /* ============================================ */
+        /*  RESULT PANEL                               */
+        /* ============================================ */
+        .result-box {
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius);
+            padding: 20px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            line-height: 1.8;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        /* ============================================ */
+        /*  TABS                                       */
+        /* ============================================ */
+        .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .tab {
+            padding: 14px 22px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: var(--transition);
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            font-family: var(--font-body);
+        }
+
+        .tab:hover { color: var(--text-secondary); }
+        .tab.active {
+            color: var(--accent-violet);
+            border-bottom-color: var(--accent-violet);
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ============================================ */
+        /*  STATS BAR                                   */
+        /* ============================================ */
+        .stats-bar {
+            display: flex;
+            gap: 16px;
+            padding: 24px 0;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            flex: 1;
+            min-width: 180px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius);
+            padding: 20px;
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            border-color: var(--border-active);
+            box-shadow: var(--shadow-card);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .stat-value.violet { color: var(--accent-violet); }
+        .stat-value.cyan { color: var(--accent-cyan); }
+        .stat-value.emerald { color: var(--accent-emerald); }
+        .stat-value.amber { color: var(--accent-amber); }
+
+        /* ============================================ */
+        /*  REFRESH BTN                                 */
+        /* ============================================ */
+        .btn-icon {
+            background: none;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: var(--transition);
+        }
+
+        .btn-icon:hover {
+            border-color: var(--accent-violet);
+            color: var(--accent-violet);
+        }
+
+        /* ============================================ */
+        /*  RESPONSIVE                                  */
+        /* ============================================ */
+        @media (max-width: 900px) {
+            .pipeline { flex-direction: column; }
+            .pipeline-arrow { transform: rotate(90deg); padding: 4px 0; }
+            .dashboard { grid-template-columns: 1fr; }
+            .query-form { flex-direction: column; }
+            .stats-bar { flex-direction: column; }
+        }
+
+        /* ============================================ */
+        /*  ANIMATIONS                                  */
+        /* ============================================ */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-card-hover) 50%, var(--bg-card) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ============================================ -->
+<!--  HEADER                                      -->
+<!-- ============================================ -->
+<header>
+    <div class="container header-inner">
+        <div class="logo">
+            <div class="logo-icon">🛒</div>
+            <div>
+                <h1>ShopBot MAS</h1>
+                <span>Multi-Agent Dashboard</span>
+            </div>
+        </div>
+        <div class="header-status">
+            <div class="status-dot" id="ollamaStatus"></div>
+            <span id="statusText">System Ready</span>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+
+    <!-- ============================================ -->
+    <!--  STATS BAR                                   -->
+    <!-- ============================================ -->
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div class="stat-label">Products in Catalog</div>
+            <div class="stat-value violet" id="statProducts">—</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Orders</div>
+            <div class="stat-value cyan" id="statOrders">—</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-value emerald" id="statRevenue">—</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Trace Events</div>
+            <div class="stat-value amber" id="statTraces">—</div>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!--  PIPELINE VISUALIZATION                      -->
+    <!-- ============================================ -->
+    <div class="pipeline-section">
+        <div class="section-title">Agent Pipeline</div>
+        <div class="pipeline" id="pipeline">
+            <div class="agent-card" id="agent-1" data-agent="CustomerIntentAgent">
+                <div class="agent-status" id="status-1"></div>
+                <div class="agent-number">1</div>
+                <div class="agent-name">Intent Analyst</div>
+                <div class="agent-role">Parse customer query</div>
+                <div class="agent-tool">parse_customer_query()</div>
+            </div>
+            <div class="pipeline-arrow" id="arrow-1">→</div>
+            <div class="agent-card" id="agent-2" data-agent="InventoryAgent">
+                <div class="agent-status" id="status-2"></div>
+                <div class="agent-number">2</div>
+                <div class="agent-name">Inventory Manager</div>
+                <div class="agent-role">Check stock & pricing</div>
+                <div class="agent-tool">check_inventory()</div>
+            </div>
+            <div class="pipeline-arrow" id="arrow-2">→</div>
+            <div class="agent-card" id="agent-3" data-agent="OrderProcessingAgent">
+                <div class="agent-status" id="status-3"></div>
+                <div class="agent-number">3</div>
+                <div class="agent-name">Order Clerk</div>
+                <div class="agent-role">Create & confirm order</div>
+                <div class="agent-tool">create_order()</div>
+            </div>
+            <div class="pipeline-arrow" id="arrow-3">→</div>
+            <div class="agent-card" id="agent-4" data-agent="ReportAgent">
+                <div class="agent-status" id="status-4"></div>
+                <div class="agent-number">4</div>
+                <div class="agent-name">Report Analyst</div>
+                <div class="agent-role">Generate session report</div>
+                <div class="agent-tool">generate_report()</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!--  QUERY INPUT                                 -->
+    <!-- ============================================ -->
+    <div class="query-section">
+        <div class="section-title">Customer Query</div>
+        <div class="query-card">
+            <form class="query-form" id="queryForm" onsubmit="return false;">
+                <div class="input-group">
+                    <input type="text" class="query-input" id="queryInput"
+                           placeholder="Enter a customer query, e.g. 'I want to buy 3 Wireless Headphones Pro'"
+                           value="I want to buy 2 Wireless Headphones Pro">
+                </div>
+                <select class="model-select" id="modelSelect">
+                    <option value="qwen3:4b">qwen3:4b</option>
+                    <option value="llama3.2:3b">llama3.2:3b</option>
+                    <option value="phi3:mini">phi3:mini</option>
+                    <option value="llama3:8b">llama3:8b</option>
+                    <option value="gemma3:4b">gemma3:4b</option>
+                </select>
+                <button type="submit" class="btn-run" id="btnRun" onclick="runPipeline()">
+                    <span>▶</span> Run Pipeline
+                </button>
+            </form>
+            <div class="quick-queries">
+                <button class="quick-query" onclick="setQuery('I want to buy 2 Wireless Headphones Pro')">Buy Headphones</button>
+                <button class="quick-query" onclick="setQuery('Order 5 USB-C Charging Cable 2m')">Buy USB Cables</button>
+                <button class="quick-query" onclick="setQuery('How much does the Mechanical Keyboard cost?')">Price Enquiry</button>
+                <button class="quick-query" onclick="setQuery('I want to return my broken webcam')">Return Item</button>
+                <button class="quick-query" onclick="setQuery('Buy 1 Monitor 27-inch IPS and 3 HDMI Cables')">Multi-Item</button>
+                <button class="quick-query" onclick="setQuery('Where is my order? I need tracking info')">Track Order</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!--  DASHBOARD PANELS                            -->
+    <!-- ============================================ -->
+    <div class="dashboard">
+
+        <!-- Inventory Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">📦 Inventory <span class="panel-badge" id="invCount">0</span></div>
+                <button class="btn-icon" onclick="loadInventory()" title="Refresh">↻</button>
+            </div>
+            <div class="panel-body" id="inventoryBody">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📦</div>
+                    <p>Loading inventory...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orders Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">🧾 Orders <span class="panel-badge" id="orderCount">0</span></div>
+                <button class="btn-icon" onclick="loadOrders()" title="Refresh">↻</button>
+            </div>
+            <div class="panel-body" id="ordersBody">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🧾</div>
+                    <p>No orders yet. Run a query to create one!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trace Log Panel -->
+        <div class="panel panel-full">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab(this, 'traceContent')">📊 Agent Traces</button>
+                <button class="tab" onclick="switchTab(this, 'resultContent')">📋 Pipeline Output</button>
+            </div>
+            <div class="tab-content active" id="traceContent">
+                <div class="panel-body" id="tracesBody" style="max-height: 320px;">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📊</div>
+                        <p>No trace events yet. Run the pipeline to see agent activity.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-content" id="resultContent">
+                <div class="panel-body">
+                    <div class="result-box" id="resultBox">Pipeline has not been run yet.
+
+Run a customer query above to see the full agent output here.</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!--  JAVASCRIPT                                   -->
+<!-- ============================================ -->
+<script>
+    // ── State ────────────────────────────────────────────
+    let polling = null;
+    let prevTraceCount = 0;
+
+    // ── Initialize ───────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        loadInventory();
+        loadOrders();
+        loadTraces();
+    });
+
+    // ── Quick query ──────────────────────────────────────
+    function setQuery(q) {
+        document.getElementById('queryInput').value = q;
+        document.getElementById('queryInput').focus();
+    }
+
+    // ── Tab switching ────────────────────────────────────
+    function switchTab(btn, contentId) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(contentId).classList.add('active');
+    }
+
+    // ── Load Inventory ───────────────────────────────────
+    async function loadInventory() {
+        try {
+            const res = await fetch('/api/inventory');
+            const products = await res.json();
+            document.getElementById('statProducts').textContent = products.length;
+            document.getElementById('invCount').textContent = products.length;
+
+            if (products.length === 0) {
+                document.getElementById('inventoryBody').innerHTML = `
+                    <div class="empty-state"><div class="empty-state-icon">📦</div><p>No products found</p></div>`;
+                return;
+            }
+
+            let html = `<table class="inv-table">
+                <thead><tr>
+                    <th>SKU</th><th>Product</th><th>Category</th><th>Price</th><th>Stock</th>
+                </tr></thead><tbody>`;
+
+            products.forEach(p => {
+                const stockClass = p.stock > 20 ? 'stock-high' : p.stock > 5 ? 'stock-medium' : 'stock-low';
+                html += `<tr>
+                    <td><span class="sku-badge">${p.sku}</span></td>
+                    <td>${p.name}</td>
+                    <td>${p.category}</td>
+                    <td><span class="price">$${p.price.toFixed(2)}</span></td>
+                    <td><span class="stock-badge ${stockClass}">${p.stock}</span></td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('inventoryBody').innerHTML = html;
+        } catch (e) {
+            console.error('Failed to load inventory:', e);
+        }
+    }
+
+    // ── Load Orders ──────────────────────────────────────
+    async function loadOrders() {
+        try {
+            const res = await fetch('/api/orders');
+            const orders = await res.json();
+            document.getElementById('statOrders').textContent = orders.length;
+            document.getElementById('orderCount').textContent = orders.length;
+
+            const revenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+            document.getElementById('statRevenue').textContent = '$' + revenue.toFixed(2);
+
+            if (orders.length === 0) {
+                document.getElementById('ordersBody').innerHTML = `
+                    <div class="empty-state"><div class="empty-state-icon">🧾</div>
+                    <p>No orders yet. Run a query to create one!</p></div>`;
+                return;
+            }
+
+            let html = '';
+            orders.slice().reverse().forEach(o => {
+                html += `<div class="order-item fade-in">
+                    <div class="order-header">
+                        <span class="order-id">${o.order_id}</span>
+                        <span class="order-status">${o.status}</span>
+                    </div>
+                    <div class="order-details">
+                        ${o.product} × ${o.quantity} @ $${o.unit_price?.toFixed(2) || '0.00'}
+                        &nbsp;=&nbsp; <span class="order-total">$${o.total?.toFixed(2) || '0.00'}</span>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('ordersBody').innerHTML = html;
+        } catch (e) {
+            console.error('Failed to load orders:', e);
+        }
+    }
+
+    // ── Load Traces ──────────────────────────────────────
+    async function loadTraces() {
+        try {
+            const res = await fetch('/api/traces');
+            const traces = await res.json();
+            document.getElementById('statTraces').textContent = traces.length;
+
+            if (traces.length === 0) {
+                document.getElementById('tracesBody').innerHTML = `
+                    <div class="empty-state"><div class="empty-state-icon">📊</div>
+                    <p>No trace events yet. Run the pipeline to see agent activity.</p></div>`;
+                return;
+            }
+
+            let html = '';
+            traces.slice().reverse().forEach(t => {
+                const eventClass = t.event || '';
+                const time = t.timestamp ? new Date(t.timestamp).toLocaleTimeString() : '';
+                let detail = '';
+
+                if (t.event === 'tool_call') {
+                    detail = `${t.tool}(${JSON.stringify(t.arguments || {}).substring(0, 80)}...)`;
+                } else if (t.event === 'agent_start') {
+                    detail = (t.input || '').substring(0, 100);
+                } else if (t.event === 'agent_end') {
+                    detail = (t.output || '').substring(0, 100);
+                } else if (t.event === 'state_transition') {
+                    detail = `${t.from_agent} → ${t.to_agent}`;
+                } else if (t.event === 'error') {
+                    detail = (t.error || '').substring(0, 100);
+                }
+
+                html += `<div class="trace-item fade-in">
+                    <span class="trace-event ${eventClass}">${t.event}</span>
+                    <span class="trace-agent">${t.agent || ''}</span>
+                    <span class="trace-detail">${detail}</span>
+                    <span class="trace-time">${time}</span>
+                </div>`;
+            });
+            document.getElementById('tracesBody').innerHTML = html;
+            prevTraceCount = traces.length;
+        } catch (e) {
+            console.error('Failed to load traces:', e);
+        }
+    }
+
+    // ── Run Pipeline ─────────────────────────────────────
+    async function runPipeline() {
+        const query = document.getElementById('queryInput').value.trim();
+        const model = document.getElementById('modelSelect').value;
+        const btn = document.getElementById('btnRun');
+
+        if (!query) return;
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Running...';
+        document.getElementById('statusText').textContent = 'Pipeline Running...';
+        document.getElementById('ollamaStatus').style.background = 'var(--accent-amber)';
+        document.getElementById('ollamaStatus').style.boxShadow = '0 0 8px var(--accent-amber-glow)';
+
+        // Reset agent cards
+        resetPipeline();
+
+        // Activate first agent
+        activateAgent(1);
+
+        try {
+            const res = await fetch('/api/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, model })
+            });
+            const data = await res.json();
+
+            if (data.error) {
+                showError(data.error);
+                return;
+            }
+
+            // Start polling for status
+            startPolling();
+        } catch (e) {
+            showError(e.message);
+        }
+    }
+
+    function startPolling() {
+        if (polling) clearInterval(polling);
+        polling = setInterval(async () => {
+            try {
+                // Check status
+                const statusRes = await fetch('/api/status');
+                const status = await statusRes.json();
+
+                // Update agent cards based on traces
+                const traceRes = await fetch('/api/traces');
+                const traces = await traceRes.json();
+
+                updatePipelineFromTraces(traces);
+
+                if (!status.running) {
+                    clearInterval(polling);
+                    polling = null;
+
+                    if (status.error) {
+                        showError(status.error);
+                    } else {
+                        completeAllAgents();
+                        document.getElementById('resultBox').textContent = status.result || 'No output';
+                        document.getElementById('statusText').textContent = 'Pipeline Complete ✓';
+                        document.getElementById('ollamaStatus').style.background = 'var(--accent-emerald)';
+                        document.getElementById('ollamaStatus').style.boxShadow = '0 0 8px var(--accent-emerald-glow)';
+                    }
+
+                    document.getElementById('btnRun').disabled = false;
+                    document.getElementById('btnRun').innerHTML = '<span>▶</span> Run Pipeline';
+
+                    // Refresh data
+                    loadInventory();
+                    loadOrders();
+                    loadTraces();
+                }
+            } catch (e) {
+                console.error('Polling error:', e);
+            }
+        }, 2000);
+    }
+
+    function updatePipelineFromTraces(traces) {
+        // Map agent names to pipeline position numbers
+        const agentMap = {
+            'CustomerIntentAgent': 1,
+            'InventoryAgent': 2,
+            'OrderProcessingAgent': 3,
+            'ReportAgent': 4
+        };
+        const started = new Set();
+        const ended = new Set();
+
+        traces.forEach(t => {
+            const num = agentMap[t.agent];
+
+            // agent_start → this agent is now active
+            if (t.event === 'agent_start' && num) {
+                started.add(num);
+            }
+
+            // agent_end → this agent finished
+            if (t.event === 'agent_end' && num) {
+                started.add(num);
+                ended.add(num);
+                // Also log next agent as started
+                if (num < 4) started.add(num + 1);
+            }
+
+            // tool_call → this agent is active (tool already executed)
+            if (t.event === 'tool_call' && num) {
+                started.add(num);
+                // All previous agents must be complete
+                for (let i = 1; i < num; i++) {
+                    started.add(i);
+                    ended.add(i);
+                }
+            }
+
+            // state_transition → from_agent done, to_agent starting
+            if (t.event === 'state_transition') {
+                const fromNum = agentMap[t.from_agent];
+                const toNum = agentMap[t.to_agent];
+                if (fromNum) { started.add(fromNum); ended.add(fromNum); }
+                if (toNum) { started.add(toNum); }
+            }
+        });
+
+        // Update UI cards
+        [1,2,3,4].forEach(n => {
+            if (ended.has(n)) {
+                completeAgent(n);
+            } else if (started.has(n)) {
+                activateAgent(n);
+            }
+        });
+
+        // Refresh trace display if new events appeared
+        if (traces.length !== prevTraceCount) {
+            loadTraces();
+        }
+    }
+
+    // ── Pipeline visual helpers ──────────────────────────
+    function resetPipeline() {
+        [1,2,3,4].forEach(n => {
+            const card = document.getElementById(`agent-${n}`);
+            card.classList.remove('active', 'complete', 'error');
+            document.getElementById(`status-${n}`).innerHTML = '';
+        });
+        document.querySelectorAll('.pipeline-arrow').forEach(a => a.classList.remove('active'));
+    }
+
+    function activateAgent(n) {
+        // Complete all previous
+        for (let i = 1; i < n; i++) completeAgent(i);
+        const card = document.getElementById(`agent-${n}`);
+        card.classList.remove('complete', 'error');
+        card.classList.add('active');
+        document.getElementById(`status-${n}`).innerHTML = '<div class="spinner"></div>';
+        if (n > 1) {
+            document.getElementById(`arrow-${n-1}`).classList.add('active');
+        }
+    }
+
+    function completeAgent(n) {
+        const card = document.getElementById(`agent-${n}`);
+        card.classList.remove('active', 'error');
+        card.classList.add('complete');
+        document.getElementById(`status-${n}`).innerHTML = '✅';
+        if (n > 1) {
+            const arrow = document.getElementById(`arrow-${n-1}`);
+            arrow.classList.remove('active');
+        }
+    }
+
+    function completeAllAgents() {
+        [1,2,3,4].forEach(n => completeAgent(n));
+    }
+
+    function showError(err) {
+        document.getElementById('statusText').textContent = 'Error';
+        document.getElementById('ollamaStatus').style.background = 'var(--accent-rose)';
+        document.getElementById('ollamaStatus').style.boxShadow = '0 0 8px var(--accent-rose-glow)';
+        document.getElementById('resultBox').textContent = 'Error: ' + err;
+        document.getElementById('btnRun').disabled = false;
+        document.getElementById('btnRun').innerHTML = '<span>▶</span> Run Pipeline';
+        if (polling) { clearInterval(polling); polling = null; }
+    }
+</script>
+
+</body>
+</html>
