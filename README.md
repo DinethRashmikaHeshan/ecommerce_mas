@@ -42,7 +42,8 @@ Session Report (TXT + CSV)
 
 ```bash
 # Install Ollama from https://ollama.com
-ollama pull llama3:8b
+ollama pull qwen3:4b
+
 # Alternatives: ollama pull phi3   or   ollama pull qwen2:7b
 ```
 
