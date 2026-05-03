@@ -74,7 +74,7 @@ This creates:
 python main.py
 
 # Custom query
-python main.py --query "I want to buy 3 Wireless Headphones Pro"
+python main.py --query "I want to buy 2 Wireless Headphones Pro" --model qwen3:4b
 
 # Different model
 python main.py --query "Buy 2 keyboards" --model phi3
