@@ -91,12 +91,38 @@ class OrderProcessingService:
         self.db_path = db_path
         self.cache = cache
         self.db_exists = os.path.exists(db_path)
+        if self.db_exists:
+            self._ensure_orders_table()
     
     def _get_db_connection(self):
         """Get database connection with row factory."""
         conn = sqlite3.connect(self.db_path, timeout=DB_TIMEOUT)
         conn.row_factory = sqlite3.Row
         return conn
+    
+    def _ensure_orders_table(self):
+        """Create the orders table if it does not exist."""
+        try:
+            conn = sqlite3.connect(self.db_path, timeout=DB_TIMEOUT)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS orders (
+                    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                    sku           TEXT NOT NULL,
+                    product_name  TEXT NOT NULL,
+                    product_id    INTEGER,
+                    quantity      INTEGER NOT NULL,
+                    unit_price    REAL NOT NULL,
+                    total_cost    REAL NOT NULL,
+                    status        TEXT NOT NULL DEFAULT 'confirmed',
+                    customer_id   TEXT,
+                    customer_note TEXT,
+                    created_at    TEXT NOT NULL
+                )
+            """)
+            conn.commit()
+            conn.close()
+        except sqlite3.Error as e:
+            print(f"[OrderProcessingService] Warning: could not create orders table: {e}")
     
     def validate_product(self, sku: str) -> Tuple[bool, Optional[Dict[str, Any]]]:
         """
@@ -274,9 +300,37 @@ class OrderProcessingService:
                 # Invalidate cache
                 self.cache.invalidate(OrderProcessingCache.make_key(sku, "stock_check"))
                 
+                # Generate a readable order ID
+                today_str = datetime.utcnow().strftime("%Y%m%d")
+                readable_order_id = f"ORD-{today_str}-{order_id:04d}"
+                
+                # ── Sync to orders.json for dashboard & report agent ──
+                json_order = {
+                    "order_id":      readable_order_id,
+                    "sku":           sku,
+                    "product":       product_name,
+                    "quantity":      quantity,
+                    "unit_price":    unit_price,
+                    "total":         total_cost,
+                    "status":        "confirmed",
+                    "customer_note": customer_note or "",
+                    "created_at":    order_timestamp,
+                }
+                try:
+                    existing = []
+                    if os.path.exists(ORDERS_JSON_PATH):
+                        with open(ORDERS_JSON_PATH, "r") as f:
+                            existing = json.load(f)
+                    existing.append(json_order)
+                    os.makedirs(os.path.dirname(ORDERS_JSON_PATH), exist_ok=True)
+                    with open(ORDERS_JSON_PATH, "w") as f:
+                        json.dump(existing, f, indent=2)
+                except Exception:
+                    pass  # best-effort sync
+                
                 return {
                     "success": True,
-                    "order_id": order_id,
+                    "order_id": readable_order_id,
                     "sku": sku,
                     "product_name": product_name,
                     "quantity": quantity,
